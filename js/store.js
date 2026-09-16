@@ -103,35 +103,18 @@
     return !!res.data;
   }
 
-  // — admin only: requires an authenticated session (see admin.js) —
-  async function adminListBookings() {
-    var res = await db().from("bookings").select("*").order("date").order("time");
+  // — admin only: every call re-checks the password server-side, nothing
+  // is stored as a session. See supabase/schema.sql for set_admin_password. —
+  async function adminListBookings(password) {
+    var res = await db().rpc("admin_list_bookings", { p_password: password });
     if (res.error) throw res.error;
     return res.data || [];
   }
 
-  async function adminDeleteBooking(id) {
-    var res = await db().from("bookings").delete().eq("id", id);
+  async function adminDeleteBooking(password, id) {
+    var res = await db().rpc("admin_delete_booking", { p_password: password, p_id: id });
     if (res.error) throw res.error;
-  }
-
-  async function signInWithPassword(email, password) {
-    var res = await db().auth.signInWithPassword({ email: email, password: password });
-    if (res.error) throw res.error;
-    return res.data;
-  }
-
-  async function getSession() {
-    try {
-      var res = await db().auth.getSession();
-      return res.data ? res.data.session : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  async function signOut() {
-    await db().auth.signOut();
+    return !!res.data;
   }
 
   window.LunchStore = {
@@ -147,9 +130,6 @@
     createBooking: createBooking,
     cancelBooking: cancelBooking,
     adminListBookings: adminListBookings,
-    adminDeleteBooking: adminDeleteBooking,
-    signInWithPassword: signInWithPassword,
-    getSession: getSession,
-    signOut: signOut
+    adminDeleteBooking: adminDeleteBooking
   };
 })();

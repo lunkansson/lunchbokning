@@ -24,10 +24,10 @@ create table public.bookings (
 
 alter table public.bookings enable row level security;
 
--- No policies for anon/public: the table is reachable only through the
--- SECURITY DEFINER functions below, which never return employee_name to
--- anonymous callers. Only an authenticated admin can read/delete rows
--- directly (see policies at the bottom).
+-- No policies for anon/public at all: the table is reachable only through
+-- the SECURITY DEFINER functions below. The booking-side ones never return
+-- employee_name; the admin-side ones (further down) do, but only after
+-- checking a password server-side.
 
 -- One person per slot; six-week cooldown per employee. cooldown_days
 -- mirrors COOLDOWN_WEEKS in js/store.js — change both together.
@@ -94,10 +94,60 @@ grant execute on function public.cancel_booking(uuid, uuid) to anon;
 grant execute on function public.taken_slots() to anon;
 grant execute on function public.last_lunch(text) to anon;
 
--- Admin (logged-in via Supabase Auth) can see and remove real bookings.
--- Explicit grants alongside the RLS policies: don't rely on whatever
--- table-level privileges a given project's defaults happen to hand out.
+-- No table-level access for anon at all — every read/write above goes
+-- through a function, and none of them return employee_name to anon.
 revoke all on public.bookings from anon;
-grant select, delete on public.bookings to authenticated;
-create policy admin_select on public.bookings for select to authenticated using (true);
-create policy admin_delete on public.bookings for delete to authenticated using (true);
+
+-- ─── Admin: a single bcrypt-hashed password, no Supabase Auth account ───
+-- Set/change it any time by running, right here in the SQL editor:
+--   select set_admin_password('your-password-here');
+-- That password is never stored in plain text and this function is not
+-- reachable over the API (no grant to anon) — only from the SQL editor.
+create table if not exists public.admin_settings (
+  id boolean primary key default true check (id),
+  password_hash text not null default ''
+);
+insert into public.admin_settings (id) values (true) on conflict (id) do nothing;
+
+create or replace function public.set_admin_password(p_password text)
+returns void language sql set search_path = public as $$
+  update public.admin_settings set password_hash = crypt(p_password, gen_salt('bf')) where id = true;
+$$;
+
+create or replace function public.check_admin_password(p_password text)
+returns boolean language sql security definer set search_path = public as $$
+  select password_hash <> '' and password_hash = crypt(p_password, password_hash)
+  from public.admin_settings where id = true;
+$$;
+
+-- Password-gated reads/writes on the real bookings table. Each call
+-- re-checks the password server-side; nothing is trusted from the client
+-- beyond "did they type the right password this time".
+create or replace function public.admin_list_bookings(p_password text)
+returns setof public.bookings
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.check_admin_password(p_password) then
+    raise exception 'invalid_password';
+  end if;
+  return query select * from public.bookings order by date, time;
+end;
+$$;
+
+create or replace function public.admin_delete_booking(p_password text, p_id uuid)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.check_admin_password(p_password) then
+    raise exception 'invalid_password';
+  end if;
+  delete from public.bookings where id = p_id;
+  return found;
+end;
+$$;
+
+grant execute on function public.admin_list_bookings(text) to anon;
+grant execute on function public.admin_delete_booking(text, uuid) to anon;
+-- check_admin_password and set_admin_password are deliberately NOT granted
+-- to anon: the former is only ever called from inside the two functions
+-- above, the latter only runs when you execute it yourself in the SQL editor.

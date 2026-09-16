@@ -6,11 +6,12 @@
   var d = Store.parseDate;
   var fmt = Store.formatShort;
 
-  // The login form only asks for a password; Supabase Auth still needs an
-  // email internally, so we pin every admin session to this one fixed,
-  // non-mailbox address. Create this exact user (Authentication → Users →
-  // Add user) in the Supabase dashboard and set its password there.
-  var ADMIN_EMAIL = "admin@lunchbokning.internal";
+  // Kept only in this tab's sessionStorage (cleared when the tab closes) so
+  // a reload doesn't force re-typing the password. Never sent anywhere
+  // except as the p_password argument to the admin_* RPCs, which re-check
+  // it against the bcrypt hash in Supabase on every call — see schema.sql.
+  var SESSION_KEY = "lunchbokning:admin-password";
+  var password = null;
 
   var loginCard = document.getElementById("login-card");
   var adminContent = document.getElementById("admin-content");
@@ -26,16 +27,7 @@
     return dt.toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
   }
 
-  async function renderBookings() {
-    var bookings;
-    try {
-      bookings = await Store.adminListBookings();
-    } catch (e) {
-      empty.hidden = false;
-      empty.textContent = "Kunde inte hämta bokningar.";
-      return;
-    }
-
+  function renderRows(bookings) {
     body.innerHTML = "";
     empty.hidden = bookings.length > 0;
     empty.textContent = "Inga bokningar ännu.";
@@ -57,8 +49,8 @@
       removeBtn.addEventListener("click", async function () {
         removeBtn.disabled = true;
         try {
-          await Store.adminDeleteBooking(b.id);
-          renderBookings();
+          await Store.adminDeleteBooking(password, b.id);
+          loadAndRender();
         } catch (e) {
           removeBtn.disabled = false;
         }
@@ -70,10 +62,21 @@
     });
   }
 
+  async function loadAndRender() {
+    try {
+      var bookings = await Store.adminListBookings(password);
+      renderRows(bookings);
+    } catch (e) {
+      logOut();
+      loginError.textContent = "Fel lösenord.";
+      loginError.hidden = false;
+    }
+  }
+
   function showLoggedIn() {
     loginCard.hidden = true;
     adminContent.hidden = false;
-    renderBookings();
+    loadAndRender();
   }
 
   function showLoggedOut() {
@@ -81,11 +84,20 @@
     adminContent.hidden = true;
   }
 
+  function logOut() {
+    password = null;
+    try { window.sessionStorage.removeItem(SESSION_KEY); } catch (e) { /* ignore */ }
+    showLoggedOut();
+  }
+
   loginBtn.addEventListener("click", async function () {
     loginError.hidden = true;
     loginBtn.disabled = true;
+    var candidate = passwordInput.value;
     try {
-      await Store.signInWithPassword(ADMIN_EMAIL, passwordInput.value);
+      await Store.adminListBookings(candidate); // throws if wrong
+      password = candidate;
+      try { window.sessionStorage.setItem(SESSION_KEY, password); } catch (e) { /* ignore */ }
       passwordInput.value = "";
       showLoggedIn();
     } catch (e) {
@@ -100,14 +112,16 @@
     if (ev.key === "Enter") loginBtn.click();
   });
 
-  logoutBtn.addEventListener("click", async function () {
-    await Store.signOut();
-    showLoggedOut();
-  });
+  logoutBtn.addEventListener("click", logOut);
 
-  (async function init() {
-    var session = await Store.getSession();
-    if (session) showLoggedIn();
-    else showLoggedOut();
+  (function init() {
+    var remembered = null;
+    try { remembered = window.sessionStorage.getItem(SESSION_KEY); } catch (e) { /* ignore */ }
+    if (remembered) {
+      password = remembered;
+      showLoggedIn();
+    } else {
+      showLoggedOut();
+    }
   })();
 })();
