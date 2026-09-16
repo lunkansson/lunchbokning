@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunchbokning · admin</title>
+<link rel="stylesheet" href="css/nocturne.css">
+<link rel="stylesheet" href="css/page.css">
+</head>
+<body>
+
+<div class="page">
+  <nav class="app-nav" style="pointer-events: auto">
+    <span class="nav-pill nav-brand">
+      <img src="assets/nexer-logo.png" alt="Nexer" class="nav-logo">
+      <span class="nav-title">Lunchbokning · admin</span>
+    </span>
+    <a class="nav-pill nav-meta" href="index.html" style="text-decoration: none">← Till bokningssidan</a>
+  </nav>
+
+  <div class="admin-shell">
+    <div id="login-card" class="card admin-card" style="max-width: 360px">
+      <h2 style="margin-top: 0">Logga in</h2>
+      <div class="field" style="margin-bottom: var(--space-4)">
+        <label for="admin-password">Lösenord</label>
+        <input id="admin-password" class="input" type="password" autocomplete="current-password">
+      </div>
+      <button id="login-btn" class="btn btn-primary" type="button">Logga in</button>
+      <p id="login-error" class="admin-empty" style="padding-top: var(--space-4)" hidden></p>
+    </div>
+
+    <div id="admin-content" hidden>
+      <p class="admin-warning">
+        <strong>Bokningar sparas i en delad databas nu</strong> (inte bara i webbläsaren), så den här listan visar
+        alla anställdas bokningar. Lösenordet ovan är det enda skyddet för den här sidan — dela inte länken eller
+        lösenordet i onödan.
+      </p>
+
+      <div class="card admin-card">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <h2 style="margin-top: 0">Bokningar</h2>
+          <button id="logout-btn" class="btn btn-ghost" type="button">Logga ut</button>
+        </div>
+        <table class="table" id="bookings-table">
+          <thead>
+            <tr>
+              <th>Namn</th>
+              <th>Dag</th>
+              <th>Tid</th>
+              <th>Plats</th>
+              <th>Bokad</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="bookings-body"></tbody>
+        </table>
+        <p id="bookings-empty" class="admin-empty" hidden>Inga bokningar ännu.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/store.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

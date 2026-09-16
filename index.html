@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunchbokning</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="css/nocturne.css">
+<link rel="stylesheet" href="css/page.css">
+</head>
+<body>
+
+<div class="backdrop" aria-hidden="true">
+  <div id="map" class="backdrop-map"></div>
+  <div class="backdrop-glow"></div>
+  <div class="backdrop-veil"></div>
+</div>
+
+<div class="page">
+  <nav class="app-nav">
+    <span class="nav-pill nav-brand">
+      <img src="assets/nexer-logo.png" alt="Nexer" class="nav-logo">
+      <span class="nav-title">Lunchbokning</span>
+    </span>
+    <span class="nav-pill nav-meta">1:1 · 60 minuter · jag bjuder</span>
+  </nav>
+
+  <div class="content">
+    <header class="hero">
+      <div class="hero-card">
+        <div class="hero-kicker">Hösten 2026</div>
+        <h1 class="hero-title">Luncha med Fredrik</h1>
+        <p class="hero-body">Ingen specifik agenda - bara en timme och något gott att äta. Åtta tider i månaden, först till kvarn, och <span id="cooldown-phrase"></span>.</p>
+      </div>
+      <div class="steps-row">
+        <div class="step-pill"><span class="step-number">01</span><span class="step-label">Säg vem du är</span></div>
+        <div class="step-pill"><span class="step-number">02</span><span class="step-label">Peka på en dag</span></div>
+        <div class="step-pill"><span class="step-number">03</span><span class="step-label">Ta en tid — klart</span></div>
+      </div>
+    </header>
+
+    <div class="fade-divider"></div>
+
+    <div id="confirmed-view" class="confirmed-card card elev-md" hidden>
+      <div class="tag tag-accent">Bokat</div>
+      <h2 id="receipt-title" class="confirmed-title"></h2>
+      <p id="receipt-body" class="confirmed-body"></p>
+      <div class="receipt-grid">
+        <div class="receipt-row"><span class="receipt-label">Plats</span><span id="receipt-place"></span></div>
+        <div class="receipt-row"><span class="receipt-label">Nästa gång</span><span id="receipt-next" class="receipt-value--next"></span></div>
+      </div>
+      <div class="confirmed-actions">
+        <button id="cancel-btn" class="btn btn-ghost">Avboka</button>
+        <button id="reset-btn" class="btn btn-ghost">Boka för någon annan</button>
+      </div>
+    </div>
+
+    <div id="booking-view" class="booking-view">
+      <section>
+        <div class="section-heading"><span class="section-number">01</span><h2>Vem är du?</h2></div>
+        <div class="who-grid">
+          <div class="field">
+            <label for="emp">Namn</label>
+            <select id="emp" class="input">
+              <option value="">Välj ditt namn…</option>
+            </select>
+          </div>
+          <div class="status-box">
+            <div id="status-title" class="status-title"></div>
+            <div id="status-body" class="status-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-heading"><span class="section-number">02</span><h2>Välj en dag</h2></div>
+        <p id="calendar-hint" class="calendar-hint"></p>
+        <div class="calendar-card">
+          <div class="calendar-header">
+            <button id="cal-prev" class="btn btn-ghost calendar-nav" type="button">←</button>
+            <span id="cal-month" class="calendar-month"></span>
+            <button id="cal-next" class="btn btn-ghost calendar-nav" type="button">→</button>
+          </div>
+          <div class="weekday-row">
+            <div class="weekday">Mån</div>
+            <div class="weekday">Tis</div>
+            <div class="weekday">Ons</div>
+            <div class="weekday">Tors</div>
+            <div class="weekday">Fre</div>
+            <div class="weekday">Lör</div>
+            <div class="weekday">Sön</div>
+          </div>
+          <div id="cal-grid" class="days-grid"></div>
+          <div class="legend-row">
+            <span class="legend-item"><span class="legend-dot legend-dot--accent"></span>Lediga tider</span>
+            <span class="legend-item"><span class="legend-dot legend-dot--full"></span>Fullt</span>
+            <span class="legend-item"><span class="legend-dot legend-dot--locked"></span><span id="cooldown-label"></span></span>
+          </div>
+        </div>
+      </section>
+
+      <section id="time-section" hidden>
+        <div class="section-heading"><span class="section-number">03</span><h2>Välj tid</h2></div>
+        <div class="card time-card">
+          <div id="day-line" class="day-line"></div>
+          <div id="place-line" class="place-line"></div>
+          <div id="time-grid" class="time-grid"></div>
+          <div class="confirm-row">
+            <button id="confirm-btn" class="btn btn-primary" type="button" disabled>Boka lunchen</button>
+            <span id="confirm-hint" class="confirm-hint"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/store.js"></script>
+<script src="js/booking.js"></script>
+</body>
+</html>
