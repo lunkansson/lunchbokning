@@ -192,3 +192,48 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 }
 .admin-warning strong { color: var(--color-text); }
 .admin-empty { font-size: 14px; color: var(--color-neutral-500); padding: var(--space-6) 0; }
+
+/* — mobile — */
+@media (max-width: 640px) {
+  .app-nav { flex-wrap: wrap; padding: var(--space-4) 16px; row-gap: var(--space-3); }
+  .nav-logo { height: 32px; }
+  .nav-title { font-size: 15px; }
+  .nav-meta { font-size: 13px; padding: var(--space-2) var(--space-4); }
+
+  .content { padding: 0 16px; }
+
+  .hero { padding: 32px 0 20px; max-width: none; }
+  .hero-card { padding: 24px; }
+  .hero-kicker { margin-bottom: var(--space-3); }
+  .hero-title { font-size: 32px; margin: 0 0 var(--space-4); }
+  .hero-body { font-size: 15px; }
+
+  .steps-row { gap: var(--space-3); margin-top: 20px; }
+  .step-pill { padding: var(--space-3) var(--space-6); }
+
+  .fade-divider { margin-bottom: 32px; }
+  .booking-view { gap: 32px; }
+
+  .section-heading { padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); }
+  .section-heading h2 { font-size: 19px; }
+
+  .who-grid { gap: var(--space-4); }
+  .status-box { padding: var(--space-4) var(--space-6); }
+
+  .calendar-hint { margin: var(--space-3) 0 var(--space-4); }
+  .calendar-card, .time-card { padding: 18px; }
+  .calendar-header { margin-bottom: var(--space-4); }
+  .calendar-month { font-size: 15px; }
+  .days-grid { gap: 3px; }
+  .day-cell { font-size: 12px; }
+
+  .time-grid { gap: var(--space-3); margin: var(--space-4) 0 20px; }
+  .time-btn { flex: 1 1 45%; min-width: 0; padding: var(--space-3) var(--space-4); }
+
+  .confirmed-card { padding: 24px; }
+  .confirmed-title { font-size: 24px; }
+  .receipt-label { width: 90px; }
+
+  .admin-shell { padding: 16px; }
+  .admin-card { padding: 20px; }
+}
