@@ -19,6 +19,8 @@
   var loginBtn = document.getElementById("login-btn");
   var loginError = document.getElementById("login-error");
   var logoutBtn = document.getElementById("logout-btn");
+  var pendingBody = document.getElementById("pending-body");
+  var pendingEmpty = document.getElementById("pending-empty");
   var body = document.getElementById("bookings-body");
   var empty = document.getElementById("bookings-empty");
 
@@ -27,38 +29,57 @@
     return dt.toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
   }
 
-  function renderRows(bookings) {
-    body.innerHTML = "";
-    empty.hidden = bookings.length > 0;
-    empty.textContent = "Inga bokningar ännu.";
+  function addRow(tbody, b, actionButtons) {
+    var tr = document.createElement("tr");
+    var dayLabel = DAYS[d(b.date).getDay()] + " " + fmt(d(b.date));
+    [b.employee_name, dayLabel, b.time, b.place, formatBookedAt(b.booked_at)].forEach(function (text) {
+      var td = document.createElement("td");
+      td.textContent = text;
+      tr.appendChild(td);
+    });
 
-    bookings.forEach(function (b) {
-      var tr = document.createElement("tr");
-      var dayLabel = DAYS[d(b.date).getDay()] + " " + fmt(d(b.date));
-      [b.employee_name, dayLabel, b.time, b.place, formatBookedAt(b.booked_at)].forEach(function (text) {
-        var td = document.createElement("td");
-        td.textContent = text;
-        tr.appendChild(td);
-      });
-
-      var actionTd = document.createElement("td");
-      var removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.className = "btn btn-ghost";
-      removeBtn.textContent = "Ta bort";
-      removeBtn.addEventListener("click", async function () {
-        removeBtn.disabled = true;
+    var actionTd = document.createElement("td");
+    actionTd.style.display = "flex";
+    actionTd.style.gap = "8px";
+    actionButtons.forEach(function (spec) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn btn-ghost";
+      btn.textContent = spec.label;
+      btn.addEventListener("click", async function () {
+        actionTd.querySelectorAll("button").forEach(function (b2) { b2.disabled = true; });
         try {
-          await Store.adminDeleteBooking(password, b.id);
+          await spec.onClick();
           loadAndRender();
         } catch (e) {
-          removeBtn.disabled = false;
+          actionTd.querySelectorAll("button").forEach(function (b2) { b2.disabled = false; });
         }
       });
-      actionTd.appendChild(removeBtn);
-      tr.appendChild(actionTd);
+      actionTd.appendChild(btn);
+    });
+    tr.appendChild(actionTd);
+    tbody.appendChild(tr);
+  }
 
-      body.appendChild(tr);
+  function renderRows(bookings) {
+    var pending = bookings.filter(function (b) { return b.status === "pending"; });
+    var confirmed = bookings.filter(function (b) { return b.status !== "pending"; });
+
+    pendingBody.innerHTML = "";
+    pendingEmpty.hidden = pending.length > 0;
+    pending.forEach(function (b) {
+      addRow(pendingBody, b, [
+        { label: "Godkän", onClick: function () { return Store.adminApproveBooking(password, b.id); } },
+        { label: "Neka", onClick: function () { return Store.adminDeleteBooking(password, b.id); } }
+      ]);
+    });
+
+    body.innerHTML = "";
+    empty.hidden = confirmed.length > 0;
+    confirmed.forEach(function (b) {
+      addRow(body, b, [
+        { label: "Ta bort", onClick: function () { return Store.adminDeleteBooking(password, b.id); } }
+      ]);
     });
   }
 

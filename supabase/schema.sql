@@ -17,6 +17,7 @@ create table public.bookings (
   date date not null,
   time text not null,
   place text not null,
+  status text not null default 'confirmed' check (status in ('confirmed', 'pending')),
   cancel_token uuid not null default gen_random_uuid(),
   booked_at timestamptz not null default now(),
   constraint uniq_slot unique (date, time)
@@ -31,9 +32,14 @@ alter table public.bookings enable row level security;
 
 -- One person per slot; six-week cooldown per employee. cooldown_days
 -- mirrors COOLDOWN_WEEKS in js/store.js — change both together.
+--
+-- Thursday bookings are auto-confirmed; any other date is inserted as
+-- 'pending' until an admin approves it. This is decided here, from the
+-- date itself, on purpose — never trust a client-supplied status, or
+-- anyone could self-approve any day by calling the API directly.
 create or replace function public.create_booking(
   p_employee_id text, p_employee_name text, p_date date, p_time text, p_place text
-) returns table(id uuid, cancel_token uuid, booked_at timestamptz)
+) returns table(id uuid, cancel_token uuid, booked_at timestamptz, status text)
 language plpgsql security definer set search_path = public as $$
 declare
   cooldown_days constant integer := 42;
@@ -41,6 +47,7 @@ declare
   v_id uuid;
   v_token uuid;
   v_at timestamptz;
+  v_status text;
 begin
   if p_employee_id is null or p_employee_id = '' then
     raise exception 'invalid_employee';
@@ -51,15 +58,17 @@ begin
     raise exception 'cooldown_active';
   end if;
 
+  v_status := case when extract(dow from p_date)::int = 4 then 'confirmed' else 'pending' end;
+
   begin
-    insert into public.bookings (employee_id, employee_name, date, time, place)
-    values (p_employee_id, p_employee_name, p_date, p_time, p_place)
+    insert into public.bookings (employee_id, employee_name, date, time, place, status)
+    values (p_employee_id, p_employee_name, p_date, p_time, p_place, v_status)
     returning bookings.id, bookings.cancel_token, bookings.booked_at into v_id, v_token, v_at;
   exception when unique_violation then
     raise exception 'slot_taken';
   end;
 
-  return query select v_id, v_token, v_at;
+  return query select v_id, v_token, v_at, v_status;
 end;
 $$;
 
@@ -72,7 +81,9 @@ begin
 end;
 $$;
 
--- Slot availability only — never exposes who booked it.
+-- Slot availability only — never exposes who booked it. Includes pending
+-- requests too, not just confirmed bookings, so two people can't end up
+-- both waiting on approval for the same date.
 -- (Columns are aliased away from the bare words "date"/"time": Postgres's
 -- parser can't take them as column names directly in a RETURNS TABLE list.)
 create or replace function public.taken_slots()
@@ -146,8 +157,24 @@ begin
 end;
 $$;
 
+-- Turns a pending request into a real, confirmed booking. Denying one is
+-- just admin_delete_booking above — a denied request has nothing worth
+-- keeping.
+create or replace function public.admin_approve_booking(p_password text, p_id uuid)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.check_admin_password(p_password) then
+    raise exception 'invalid_password';
+  end if;
+  update public.bookings set status = 'confirmed' where id = p_id and status = 'pending';
+  return found;
+end;
+$$;
+
 grant execute on function public.admin_list_bookings(text) to anon;
 grant execute on function public.admin_delete_booking(text, uuid) to anon;
+grant execute on function public.admin_approve_booking(text, uuid) to anon;
 -- check_admin_password and set_admin_password are deliberately NOT granted
 -- to anon: the former is only ever called from inside the two functions
 -- above, the latter only runs when you execute it yourself in the SQL editor.

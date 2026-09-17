@@ -36,11 +36,29 @@
         lösenordet i onödan.
       </p>
 
-      <div class="card admin-card">
+      <div class="card admin-card" style="margin-bottom: var(--space-8)">
         <div style="display: flex; align-items: center; justify-content: space-between">
-          <h2 style="margin-top: 0">Bokningar</h2>
+          <h2 style="margin-top: 0">Väntar på godkännande</h2>
           <button id="logout-btn" class="btn btn-ghost" type="button">Logga ut</button>
         </div>
+        <table class="table" id="pending-table">
+          <thead>
+            <tr>
+              <th>Namn</th>
+              <th>Dag</th>
+              <th>Tid</th>
+              <th>Plats</th>
+              <th>Skickad</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pending-body"></tbody>
+        </table>
+        <p id="pending-empty" class="admin-empty" hidden>Inga förfrågningar väntar.</p>
+      </div>
+
+      <div class="card admin-card">
+        <h2 style="margin-top: 0">Bokningar</h2>
         <table class="table" id="bookings-table">
           <thead>
             <tr>

@@ -3,6 +3,12 @@
 1:1 lunch booking page for Nexer employees, plus a password-gated admin
 view. Static HTML/CSS/JS — no build step. Bookings live in Supabase.
 
+Thursdays at 12:00 book instantly. Any other day is sent as a request —
+the booking stays "pending" until approved (or denied) from `admin.html`.
+That split is decided by the date itself inside `create_booking` in
+`supabase/schema.sql`, not by the client, so it can't be bypassed by
+calling the API directly.
+
 ## Setup
 
 1. **Supabase.** Create a free project at supabase.com. In the SQL editor,

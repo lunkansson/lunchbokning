@@ -120,27 +120,35 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 }
 
 .calendar-card { max-width: 560px; background: var(--color-surface); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-sm); pointer-events: auto; }
+.calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-8); }
+.calendar-nav { padding: var(--space-2) var(--space-4); color: var(--color-accent-300); }
+.calendar-month { font-family: var(--font-heading); font-size: 17px; letter-spacing: -0.01em; text-transform: lowercase; }
 
-.thursday-list { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-6); }
-.thu-pill {
-  display: flex; align-items: center; gap: var(--space-6); font: inherit; font-size: 14px;
-  padding: var(--space-4) var(--space-6); border-radius: var(--radius-md);
-  border: 1px solid var(--color-neutral-800); background: transparent; color: var(--color-neutral-400);
-  cursor: default; text-transform: lowercase;
+.weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-2); margin-bottom: var(--space-3); }
+.weekday { text-align: center; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-neutral-400); }
+
+.days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-2); }
+.day-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  aspect-ratio: 1 / 1; border-radius: var(--radius-md); font: inherit; font-size: 14px;
+  border: 1px solid transparent; background: transparent; color: var(--color-neutral-400);
+  cursor: default; padding: 0; transition: background .15s, border-color .15s;
 }
-.thu-note { font-size: 12px; color: var(--color-neutral-500); }
-.thu-pill--open { color: var(--color-text); cursor: pointer; background: var(--color-surface); }
-.thu-pill--open .thu-note { color: var(--color-accent-300); }
-.thu-pill--open.thu-pill--noemp { cursor: not-allowed; opacity: 0.7; }
-.thu-pill--selected { border-color: var(--color-accent); background: var(--color-accent-900); box-shadow: 0 0 0 3px rgba(145, 132, 217, 0.22); }
-.thu-pill--selected .thu-note { color: var(--color-accent-200); }
-.thu-pill--full { color: var(--color-neutral-300); background: var(--color-neutral-900); border-style: dashed; border-color: var(--color-neutral-700); cursor: not-allowed; }
-.thu-pill--locked { cursor: not-allowed; }
+.day-dot { width: 4px; height: 4px; border-radius: 50%; margin-top: 3px; background: transparent; }
+.day-cell--open, .day-cell--request { color: var(--color-text); cursor: pointer; border: 1px solid var(--color-neutral-800); background: var(--color-surface); }
+.day-cell--open .day-dot { background: var(--color-accent); }
+.day-cell--request .day-dot { background: transparent; box-shadow: 0 0 0 1px var(--color-accent); }
+.day-cell--open.day-cell--noemp, .day-cell--request.day-cell--noemp { cursor: not-allowed; opacity: 0.7; }
+.day-cell--selected { border: 1px solid var(--color-accent); background: var(--color-accent-900); box-shadow: 0 0 0 3px rgba(145, 132, 217, 0.22); }
+.day-cell--full { color: var(--color-neutral-300); background: var(--color-neutral-900); border: 1px dashed var(--color-neutral-700); cursor: not-allowed; }
+.day-cell--full .day-dot { background: var(--color-neutral-700); }
+.day-cell--locked { color: var(--color-neutral-500); border: 1px solid var(--color-neutral-800); cursor: not-allowed; }
 
 .legend-row { display: flex; gap: var(--space-8); margin-top: var(--space-8); font-size: 12px; color: var(--color-neutral-500); flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: var(--space-2); }
 .legend-dot { width: 6px; height: 6px; border-radius: 50%; }
 .legend-dot--accent { background: var(--color-accent); }
+.legend-dot--hollow { background: transparent; box-shadow: 0 0 0 1px var(--color-accent); }
 .legend-dot--full { background: var(--color-neutral-700); }
 .legend-dot--locked { background: transparent; box-shadow: 0 0 0 1px var(--color-neutral-800); }
 
@@ -201,7 +209,10 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 
   .calendar-hint { margin: var(--space-3) 0 var(--space-4); }
   .calendar-card, .time-card { padding: 18px; }
-  .thu-pill { padding: var(--space-3) var(--space-4); font-size: 13px; }
+  .calendar-header { margin-bottom: var(--space-4); }
+  .calendar-month { font-size: 15px; }
+  .days-grid { gap: 3px; }
+  .day-cell { font-size: 12px; }
 
   .confirmed-card { padding: 24px; }
   .confirmed-title { font-size: 24px; }

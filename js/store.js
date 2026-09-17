@@ -83,7 +83,7 @@
       throw res.error;
     }
     var row = Array.isArray(res.data) ? res.data[0] : res.data;
-    return row; // { id, cancel_token, booked_at }
+    return row; // { id, cancel_token, booked_at, status: "confirmed"|"pending" }
   }
 
   async function cancelBooking(id, cancelToken) {
@@ -106,6 +106,12 @@
     return !!res.data;
   }
 
+  async function adminApproveBooking(password, id) {
+    var res = await db().rpc("admin_approve_booking", { p_password: password, p_id: id });
+    if (res.error) throw res.error;
+    return !!res.data;
+  }
+
   window.LunchStore = {
     COOLDOWN_WEEKS: COOLDOWN_WEEKS,
     LUNCH_TIME: LUNCH_TIME,
@@ -120,6 +126,7 @@
     createBooking: createBooking,
     cancelBooking: cancelBooking,
     adminListBookings: adminListBookings,
-    adminDeleteBooking: adminDeleteBooking
+    adminDeleteBooking: adminDeleteBooking,
+    adminApproveBooking: adminApproveBooking
   };
 })();
