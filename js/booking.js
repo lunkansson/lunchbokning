@@ -3,7 +3,6 @@
 
   var Store = window.LunchStore;
   var DAYS = Store.WEEKDAYS_FULL;
-  var MONTHS = Store.MONTHS;
   var LUNCH_TIME = Store.LUNCH_TIME;
   var d = Store.parseDate;
   var fmt = Store.formatShort;
@@ -11,11 +10,15 @@
   var today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  var VISIBLE_STEP = 8;
+  var MAX_VISIBLE = 52; // about a year of Thursdays
+
   var state = {
-    empId: "", dayKey: "", month: 0,
+    empId: "", dayKey: "",
     currentBooking: null, // { id, cancelToken }
     takenSlots: {},       // "date|time" -> true, refreshed from the server
     nextEligible: null,   // Date or null, refreshed per selected employee
+    visibleCount: VISIBLE_STEP,
     busy: false
   };
 
@@ -26,10 +29,8 @@
     cooldownPhrase: document.getElementById("cooldown-phrase"),
     cooldownLabel: document.getElementById("cooldown-label"),
     calendarHint: document.getElementById("calendar-hint"),
-    calMonth: document.getElementById("cal-month"),
-    calGrid: document.getElementById("cal-grid"),
-    calPrev: document.getElementById("cal-prev"),
-    calNext: document.getElementById("cal-next"),
+    thursdayList: document.getElementById("thursday-list"),
+    loadMoreBtn: document.getElementById("load-more-btn"),
     timeSection: document.getElementById("time-section"),
     dayLine: document.getElementById("day-line"),
     placeInput: document.getElementById("place-input"),
@@ -46,20 +47,25 @@
     map: document.getElementById("map")
   };
 
-  // Every Thursday, forever — navigable a year ahead of whichever month
-  // holds today.
-  var MONTHS_AHEAD = 12;
-  function monthsShown() {
+  function isoOf(dt) {
+    return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+  }
+
+  function firstThursdayOnOrAfter(dt) {
+    var day = new Date(dt);
+    day.setDate(day.getDate() + ((4 - day.getDay() + 7) % 7));
+    return day;
+  }
+
+  function upcomingThursdays(count) {
     var out = [];
-    for (var i = 0; i < MONTHS_AHEAD; i++) {
-      var year = today.getFullYear();
-      var month = today.getMonth() + i;
-      var dt = new Date(year, month, 1);
-      out.push({ year: dt.getFullYear(), month: dt.getMonth(), label: MONTHS[dt.getMonth()] + " " + dt.getFullYear() });
+    var cur = firstThursdayOnOrAfter(today);
+    for (var i = 0; i < count; i++) {
+      out.push(isoOf(cur));
+      cur.setDate(cur.getDate() + 7);
     }
     return out;
   }
-  var months = monthsShown();
 
   function currentEmployee() {
     return Store.EMPLOYEES.find(function (e) { return e.id === state.empId; }) || null;
@@ -70,11 +76,8 @@
   }
 
   function dayState(iso, emp, next) {
-    var dt = d(iso);
-    if (!Store.isLunchDay(dt)) return "none";
-    if (dt < today) return "past";
     if (isSlotTaken(iso, LUNCH_TIME)) return "full";
-    if (emp && next && dt < next) return "locked";
+    if (emp && next && d(iso) < next) return "locked";
     return "open";
   }
 
@@ -87,62 +90,50 @@
     });
   }
 
-  function renderCalendar(emp, next) {
-    var mi = Math.min(state.month, months.length - 1);
-    var m = months[mi];
-    el.calMonth.textContent = m.label;
-    el.calPrev.disabled = mi === 0;
-    el.calNext.disabled = mi === months.length - 1;
+  function renderThursdayList(emp, next) {
+    var isos = upcomingThursdays(state.visibleCount);
+    el.thursdayList.innerHTML = "";
 
-    var first = new Date(m.year, m.month, 1);
-    var lead = (first.getDay() + 6) % 7;
-    var total = new Date(m.year, m.month + 1, 0).getDate();
-
-    el.calGrid.innerHTML = "";
-
-    for (var i = 0; i < lead; i++) {
-      var blank = document.createElement("div");
-      blank.className = "day-cell";
-      el.calGrid.appendChild(blank);
-    }
-
-    for (var n = 1; n <= total; n++) {
-      var iso = m.year + "-" + String(m.month + 1).padStart(2, "0") + "-" + String(n).padStart(2, "0");
-      var cell = document.createElement("button");
-      cell.type = "button";
-      cell.className = "day-cell";
-
-      var numSpan = document.createElement("span");
-      numSpan.textContent = String(n);
-      var dot = document.createElement("span");
-      dot.className = "day-dot";
-      cell.appendChild(numSpan);
-      cell.appendChild(dot);
-
+    isos.forEach(function (iso) {
       var st = dayState(iso, emp, next);
-      if (st === "open") {
-        var selected = state.dayKey === iso;
-        cell.classList.add("day-cell--open");
-        if (!emp) cell.classList.add("day-cell--noemp");
-        if (selected) cell.classList.add("day-cell--selected");
-        cell.disabled = !emp;
-        cell.addEventListener("click", (function (isoDate) {
+      var selected = state.dayKey === iso;
+      var pill = document.createElement("button");
+      pill.type = "button";
+      pill.className = "thu-pill";
+
+      var label = document.createElement("span");
+      label.textContent = DAYS[d(iso).getDay()] + " " + fmt(d(iso));
+      var note = document.createElement("span");
+      note.className = "thu-note";
+
+      if (st === "full") {
+        pill.classList.add("thu-pill--full");
+        note.textContent = "Fullt";
+        pill.disabled = true;
+      } else if (st === "locked") {
+        pill.classList.add("thu-pill--locked");
+        note.textContent = "Låst";
+        pill.disabled = true;
+      } else {
+        pill.classList.add("thu-pill--open");
+        if (!emp) pill.classList.add("thu-pill--noemp");
+        if (selected) pill.classList.add("thu-pill--selected");
+        note.textContent = selected ? "Din dag" : "Ledig";
+        pill.disabled = !emp;
+        pill.addEventListener("click", (function (isoDate) {
           return function () {
             state.dayKey = isoDate;
             renderTimesAndConfirm();
           };
         })(iso));
-      } else if (st === "full") {
-        cell.classList.add("day-cell--full");
-        cell.disabled = true;
-      } else if (st === "locked") {
-        cell.classList.add("day-cell--locked");
-        cell.disabled = true;
-      } else {
-        cell.disabled = true;
       }
-      el.calGrid.appendChild(cell);
-    }
+
+      pill.appendChild(label);
+      pill.appendChild(note);
+      el.thursdayList.appendChild(pill);
+    });
+
+    el.loadMoreBtn.hidden = state.visibleCount >= MAX_VISIBLE;
   }
 
   function renderTimesAndConfirm() {
@@ -156,7 +147,7 @@
     var canConfirm = !!(emp && chosenIso && place && !isSlotTaken(chosenIso, LUNCH_TIME) && !state.busy);
     el.confirmBtn.disabled = !canConfirm;
     el.confirmHint.textContent = state.busy ? "Bokar…" : (canConfirm ? "Du kan avboka fram till dagen före." : "Skriv var du vill äta.");
-    renderCalendar(emp, state.nextEligible);
+    renderThursdayList(emp, state.nextEligible);
   }
 
   async function refreshTakenSlots() {
@@ -201,12 +192,12 @@
         el.statusBody.textContent = lastTxt;
       } else {
         el.statusTitle.textContent = "Din tur igen från " + fmt(next);
-        el.statusBody.textContent = lastTxt + " Dagar före dess är låsta.";
+        el.statusBody.textContent = lastTxt + " Torsdagar före dess är låsta.";
       }
     } else {
       el.statusTitle.classList.remove("status-title--active");
-      el.statusTitle.textContent = "Välj ditt namn så öppnar kalendern";
-      el.statusBody.textContent = "En lunch per person var " + Store.COOLDOWN_WEEKS + ":e vecka. Dagar du inte får ta ännu ligger släckta.";
+      el.statusTitle.textContent = "Välj ditt namn så öppnar listan";
+      el.statusBody.textContent = "En lunch per person var " + Store.COOLDOWN_WEEKS + ":e vecka. Torsdagar du inte får ta ännu ligger släckta.";
     }
 
     el.calendarHint.textContent = emp
@@ -221,8 +212,10 @@
     state.dayKey = "";
     render();
   });
-  el.calPrev.addEventListener("click", function () { state.month = Math.max(0, state.month - 1); renderTimesAndConfirm(); });
-  el.calNext.addEventListener("click", function () { state.month = Math.min(months.length - 1, state.month + 1); renderTimesAndConfirm(); });
+  el.loadMoreBtn.addEventListener("click", function () {
+    state.visibleCount = Math.min(MAX_VISIBLE, state.visibleCount + VISIBLE_STEP);
+    renderTimesAndConfirm();
+  });
   el.placeInput.addEventListener("input", renderTimesAndConfirm);
 
   el.confirmBtn.addEventListener("click", async function () {
