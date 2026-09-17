@@ -119,13 +119,15 @@ create table if not exists public.admin_settings (
 );
 insert into public.admin_settings (id) values (true) on conflict (id) do nothing;
 
+-- search_path includes `extensions`: that's where Supabase installs
+-- pgcrypto by default (not `public`), which is where gen_salt/crypt live.
 create or replace function public.set_admin_password(p_password text)
-returns void language sql set search_path = public as $$
+returns void language sql set search_path = public, extensions as $$
   update public.admin_settings set password_hash = crypt(p_password, gen_salt('bf')) where id = true;
 $$;
 
 create or replace function public.check_admin_password(p_password text)
-returns boolean language sql security definer set search_path = public as $$
+returns boolean language sql security definer set search_path = public, extensions as $$
   select password_hash <> '' and password_hash = crypt(p_password, password_hash)
   from public.admin_settings where id = true;
 $$;
