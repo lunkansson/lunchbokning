@@ -92,19 +92,25 @@
     el.calPrev.disabled = mi === 0;
     el.calNext.disabled = mi === months.length - 1;
 
-    var first = new Date(m.year, m.month, 1);
-    var lead = (first.getDay() + 6) % 7;
     var total = new Date(m.year, m.month + 1, 0).getDate();
 
     el.calGrid.innerHTML = "";
 
-    for (var i = 0; i < lead; i++) {
+    // 5 columns, Mon–Fri only. Weekends are skipped entirely — not even a
+    // blank cell — so leading blanks only need to cover the gap before the
+    // month's first weekday; every week after that is exactly 5 cells wide.
+    var firstWeekday = 1;
+    while (new Date(m.year, m.month, firstWeekday).getDay() % 6 === 0) firstWeekday++;
+    var leadCol = new Date(m.year, m.month, firstWeekday).getDay() - 1;
+    for (var i = 0; i < leadCol; i++) {
       var blank = document.createElement("div");
       blank.className = "day-cell";
       el.calGrid.appendChild(blank);
     }
 
     for (var n = 1; n <= total; n++) {
+      if (new Date(m.year, m.month, n).getDay() % 6 === 0) continue; // Sat/Sun
+
       var iso = m.year + "-" + String(m.month + 1).padStart(2, "0") + "-" + String(n).padStart(2, "0");
       var cell = document.createElement("button");
       cell.type = "button";
