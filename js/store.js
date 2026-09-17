@@ -6,6 +6,8 @@
   "use strict";
 
   var COOLDOWN_WEEKS = 6; // must match cooldown_days (= weeks * 7) in schema.sql
+  var LUNCH_WEEKDAY = 4;  // Date#getDay(): every Thursday
+  var LUNCH_TIME = "12:00";
 
   var MONTHS = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"];
   var WEEKDAYS_FULL = ["söndag", "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag"];
@@ -29,22 +31,9 @@
     { id: "ulrika", name: "Ulrika Jarnberger" }
   ];
 
-  // Fyra lunchdagar i månaden × två sittningar. This is just the schedule of
-  // when/where lunches happen — who has booked which slot lives in Supabase.
-  var LUNCH_DAYS = [
-    { date: "2026-09-09", place: "Bistro Nord", coords: [57.7089, 11.9746], times: ["11:45", "12:45"] },
-    { date: "2026-09-17", place: "Kajplats 6", coords: [57.7068, 11.9389], times: ["11:45", "12:45"] },
-    { date: "2026-09-23", place: "Soltorget", coords: [57.6969, 11.9865], times: ["11:45", "12:45"] },
-    { date: "2026-09-25", place: "Hörnet", coords: [57.6975, 11.9575], times: ["11:45", "12:45"] },
-    { date: "2026-10-01", place: "Bistro Nord", coords: [57.7089, 11.9746], times: ["11:45", "12:45"] },
-    { date: "2026-10-07", place: "Kajplats 6", coords: [57.7068, 11.9389], times: ["11:45", "12:45"] },
-    { date: "2026-10-15", place: "Soltorget", coords: [57.6969, 11.9865], times: ["11:45", "12:45"] },
-    { date: "2026-10-21", place: "Hörnet", coords: [57.6975, 11.9575], times: ["11:45", "12:45"] },
-    { date: "2026-11-04", place: "Bistro Nord", coords: [57.7089, 11.9746], times: ["11:45", "12:45"] },
-    { date: "2026-11-12", place: "Kajplats 6", coords: [57.7068, 11.9389], times: ["11:45", "12:45"] },
-    { date: "2026-11-18", place: "Soltorget", coords: [57.6969, 11.9865], times: ["11:45", "12:45"] },
-    { date: "2026-11-26", place: "Hörnet", coords: [57.6975, 11.9575], times: ["11:45", "12:45"] }
-  ];
+  function isLunchDay(dt) {
+    return dt.getDay() === LUNCH_WEEKDAY;
+  }
 
   function parseDate(iso) {
     return new Date(iso + "T12:00:00");
@@ -119,10 +108,11 @@
 
   window.LunchStore = {
     COOLDOWN_WEEKS: COOLDOWN_WEEKS,
+    LUNCH_TIME: LUNCH_TIME,
     MONTHS: MONTHS,
     WEEKDAYS_FULL: WEEKDAYS_FULL,
     EMPLOYEES: EMPLOYEES,
-    LUNCH_DAYS: LUNCH_DAYS,
+    isLunchDay: isLunchDay,
     parseDate: parseDate,
     formatShort: formatShort,
     fetchTakenSlots: fetchTakenSlots,

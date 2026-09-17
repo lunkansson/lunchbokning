@@ -4,6 +4,7 @@
   var Store = window.LunchStore;
   var DAYS = Store.WEEKDAYS_FULL;
   var MONTHS = Store.MONTHS;
+  var LUNCH_TIME = Store.LUNCH_TIME;
   var d = Store.parseDate;
   var fmt = Store.formatShort;
 
@@ -11,7 +12,7 @@
   today.setHours(0, 0, 0, 0);
 
   var state = {
-    empId: "", dayKey: "", time: "", month: 0,
+    empId: "", dayKey: "", month: 0,
     currentBooking: null, // { id, cancelToken }
     takenSlots: {},       // "date|time" -> true, refreshed from the server
     nextEligible: null,   // Date or null, refreshed per selected employee
@@ -31,8 +32,7 @@
     calNext: document.getElementById("cal-next"),
     timeSection: document.getElementById("time-section"),
     dayLine: document.getElementById("day-line"),
-    placeLine: document.getElementById("place-line"),
-    timeGrid: document.getElementById("time-grid"),
+    placeInput: document.getElementById("place-input"),
     confirmBtn: document.getElementById("confirm-btn"),
     confirmHint: document.getElementById("confirm-hint"),
     bookingView: document.getElementById("booking-view"),
@@ -46,22 +46,20 @@
     map: document.getElementById("map")
   };
 
+  // Every Thursday, forever — navigable a year ahead of whichever month
+  // holds today.
+  var MONTHS_AHEAD = 12;
   function monthsShown() {
     var out = [];
-    Store.LUNCH_DAYS.forEach(function (day) {
-      var dt = d(day.date);
-      var key = dt.getFullYear() + "-" + dt.getMonth();
-      if (!out.some(function (m) { return m.key === key; })) {
-        out.push({ key: key, year: dt.getFullYear(), month: dt.getMonth(), label: MONTHS[dt.getMonth()] + " " + dt.getFullYear() });
-      }
-    });
+    for (var i = 0; i < MONTHS_AHEAD; i++) {
+      var year = today.getFullYear();
+      var month = today.getMonth() + i;
+      var dt = new Date(year, month, 1);
+      out.push({ year: dt.getFullYear(), month: dt.getMonth(), label: MONTHS[dt.getMonth()] + " " + dt.getFullYear() });
+    }
     return out;
   }
   var months = monthsShown();
-  (function pickInitialMonth() {
-    var idx = months.findIndex(function (m) { return m.year === today.getFullYear() && m.month === today.getMonth(); });
-    state.month = idx === -1 ? 0 : idx;
-  })();
 
   function currentEmployee() {
     return Store.EMPLOYEES.find(function (e) { return e.id === state.empId; }) || null;
@@ -71,14 +69,11 @@
     return !!state.takenSlots[date + "|" + time];
   }
 
-  function freeTimes(day) {
-    return day.times.filter(function (t) { return !isSlotTaken(day.date, t); });
-  }
-
-  function dayState(day, emp, next) {
-    var dt = d(day.date);
+  function dayState(iso, emp, next) {
+    var dt = d(iso);
+    if (!Store.isLunchDay(dt)) return "none";
     if (dt < today) return "past";
-    if (!freeTimes(day).length) return "full";
+    if (isSlotTaken(iso, LUNCH_TIME)) return "full";
     if (emp && next && dt < next) return "locked";
     return "open";
   }
@@ -113,7 +108,6 @@
 
     for (var n = 1; n <= total; n++) {
       var iso = m.year + "-" + String(m.month + 1).padStart(2, "0") + "-" + String(n).padStart(2, "0");
-      var day = Store.LUNCH_DAYS.find(function (x) { return x.date === iso; });
       var cell = document.createElement("button");
       cell.type = "button";
       cell.className = "day-cell";
@@ -125,30 +119,25 @@
       cell.appendChild(numSpan);
       cell.appendChild(dot);
 
-      if (day) {
-        var st = dayState(day, emp, next);
-        if (st === "open") {
-          var selected = state.dayKey === iso;
-          cell.classList.add("day-cell--open");
-          if (!emp) cell.classList.add("day-cell--noemp");
-          if (selected) cell.classList.add("day-cell--selected");
-          cell.disabled = !emp;
-          cell.addEventListener("click", (function (isoDate) {
-            return function () {
-              state.dayKey = isoDate;
-              state.time = "";
-              renderTimesAndConfirm();
-            };
-          })(iso));
-        } else if (st === "full") {
-          cell.classList.add("day-cell--full");
-          cell.disabled = true;
-        } else if (st === "locked") {
-          cell.classList.add("day-cell--locked");
-          cell.disabled = true;
-        } else {
-          cell.disabled = true;
-        }
+      var st = dayState(iso, emp, next);
+      if (st === "open") {
+        var selected = state.dayKey === iso;
+        cell.classList.add("day-cell--open");
+        if (!emp) cell.classList.add("day-cell--noemp");
+        if (selected) cell.classList.add("day-cell--selected");
+        cell.disabled = !emp;
+        cell.addEventListener("click", (function (isoDate) {
+          return function () {
+            state.dayKey = isoDate;
+            renderTimesAndConfirm();
+          };
+        })(iso));
+      } else if (st === "full") {
+        cell.classList.add("day-cell--full");
+        cell.disabled = true;
+      } else if (st === "locked") {
+        cell.classList.add("day-cell--locked");
+        cell.disabled = true;
       } else {
         cell.disabled = true;
       }
@@ -156,50 +145,18 @@
     }
   }
 
-  function renderTimes(chosenDay) {
-    el.timeGrid.innerHTML = "";
-    if (!chosenDay) return;
-    chosenDay.times.forEach(function (t) {
-      var taken = isSlotTaken(chosenDay.date, t);
-      var selected = state.time === t;
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "time-btn";
-      if (taken) btn.classList.add("time-btn--taken");
-      else if (selected) btn.classList.add("time-btn--selected");
-
-      var value = document.createElement("span");
-      value.className = "time-value";
-      value.textContent = t;
-      var note = document.createElement("span");
-      note.className = "time-note";
-      note.textContent = taken ? "Bokad" : (selected ? "Din tid" : "Ledig");
-
-      btn.appendChild(value);
-      btn.appendChild(note);
-      btn.disabled = taken;
-      btn.addEventListener("click", function () {
-        state.time = t;
-        renderTimesAndConfirm();
-      });
-      el.timeGrid.appendChild(btn);
-    });
-  }
-
   function renderTimesAndConfirm() {
-    var chosenDay = Store.LUNCH_DAYS.find(function (x) { return x.date === state.dayKey; }) || null;
-    el.timeSection.hidden = !chosenDay;
-    if (chosenDay) {
-      el.dayLine.textContent = DAYS[d(chosenDay.date).getDay()] + " " + fmt(d(chosenDay.date));
-      el.placeLine.textContent = chosenDay.place;
-      renderTimes(chosenDay);
+    var chosenIso = state.dayKey || null;
+    el.timeSection.hidden = !chosenIso;
+    if (chosenIso) {
+      el.dayLine.textContent = DAYS[d(chosenIso).getDay()] + " " + fmt(d(chosenIso)) + ", kl " + LUNCH_TIME;
     }
     var emp = currentEmployee();
-    var canConfirm = !!(emp && chosenDay && state.time && !isSlotTaken(chosenDay.date, state.time) && !state.busy);
+    var place = el.placeInput.value.trim();
+    var canConfirm = !!(emp && chosenIso && place && !isSlotTaken(chosenIso, LUNCH_TIME) && !state.busy);
     el.confirmBtn.disabled = !canConfirm;
-    el.confirmHint.textContent = state.busy ? "Bokar…" : (canConfirm ? "Du kan avboka fram till dagen före." : "Välj en av tiderna ovan.");
+    el.confirmHint.textContent = state.busy ? "Bokar…" : (canConfirm ? "Du kan avboka fram till dagen före." : "Skriv var du vill äta.");
     renderCalendar(emp, state.nextEligible);
-    updateMapSelection(chosenDay);
   }
 
   async function refreshTakenSlots() {
@@ -240,7 +197,7 @@
       var lastTxt = lastLunch ? "Senaste lunchen: " + fmt(d(lastLunch)) + "." : "Vi har inte hunnit äta lunch än.";
       el.statusTitle.classList.add("status-title--active");
       if (!next || next <= today) {
-        el.statusTitle.textContent = "Du kan boka vilken ledig dag du vill";
+        el.statusTitle.textContent = "Du kan boka vilken ledig torsdag du vill";
         el.statusBody.textContent = lastTxt;
       } else {
         el.statusTitle.textContent = "Din tur igen från " + fmt(next);
@@ -253,8 +210,8 @@
     }
 
     el.calendarHint.textContent = emp
-      ? "Fyra lunchdagar i månaden, två sittningar per dag."
-      : "Fyra lunchdagar i månaden — välj ditt namn ovan för att kunna boka.";
+      ? "Varje torsdag kl " + LUNCH_TIME + "."
+      : "Varje torsdag kl " + LUNCH_TIME + " — välj ditt namn ovan för att kunna boka.";
 
     renderTimesAndConfirm();
   }
@@ -262,34 +219,35 @@
   el.empSelect.addEventListener("change", function (ev) {
     state.empId = ev.target.value;
     state.dayKey = "";
-    state.time = "";
     render();
   });
   el.calPrev.addEventListener("click", function () { state.month = Math.max(0, state.month - 1); renderTimesAndConfirm(); });
   el.calNext.addEventListener("click", function () { state.month = Math.min(months.length - 1, state.month + 1); renderTimesAndConfirm(); });
+  el.placeInput.addEventListener("input", renderTimesAndConfirm);
 
   el.confirmBtn.addEventListener("click", async function () {
     var emp = currentEmployee();
-    var chosenDay = Store.LUNCH_DAYS.find(function (x) { return x.date === state.dayKey; }) || null;
-    if (!emp || !chosenDay || !state.time || isSlotTaken(chosenDay.date, state.time) || state.busy) return;
+    var chosenIso = state.dayKey || null;
+    var place = el.placeInput.value.trim();
+    if (!emp || !chosenIso || !place || isSlotTaken(chosenIso, LUNCH_TIME) || state.busy) return;
 
     state.busy = true;
     renderTimesAndConfirm();
     try {
-      var record = await Store.createBooking({ employeeId: emp.id, employeeName: emp.name, date: chosenDay.date, time: state.time, place: chosenDay.place });
+      var record = await Store.createBooking({ employeeId: emp.id, employeeName: emp.name, date: chosenIso, time: LUNCH_TIME, place: place });
       state.currentBooking = { id: record.id, cancelToken: record.cancel_token };
 
-      el.receiptTitle.textContent = DAYS[d(chosenDay.date).getDay()] + " " + fmt(d(chosenDay.date)) + ", kl " + state.time;
+      el.receiptTitle.textContent = DAYS[d(chosenIso).getDay()] + " " + fmt(d(chosenIso)) + ", kl " + LUNCH_TIME;
       el.receiptBody.textContent = "Tack " + emp.name.split(" ")[0] + " — det ligger i kalendern. Du får en påminnelse dagen före, och hör av dig om något krånglar.";
-      el.receiptPlace.textContent = chosenDay.place;
-      el.receiptNext.textContent = "Du kan boka igen från " + fmt(new Date(d(chosenDay.date).getTime() + Store.COOLDOWN_WEEKS * 7 * 86400000));
+      el.receiptPlace.textContent = place;
+      el.receiptNext.textContent = "Du kan boka igen från " + fmt(new Date(d(chosenIso).getTime() + Store.COOLDOWN_WEEKS * 7 * 86400000));
 
       el.bookingView.hidden = true;
       el.confirmedView.hidden = false;
     } catch (err) {
       var reason = err && err.message;
-      if (reason === "slot_taken") el.confirmHint.textContent = "Just tagen av någon annan — välj en annan tid.";
-      else if (reason === "cooldown_active") el.confirmHint.textContent = "Den där tiden är låst av 6-veckorsregeln.";
+      if (reason === "slot_taken") el.confirmHint.textContent = "Just tagen av någon annan — välj en annan torsdag.";
+      else if (reason === "cooldown_active") el.confirmHint.textContent = "Den där dagen är låst av 6-veckorsregeln.";
       else el.confirmHint.textContent = "Kunde inte boka — försök igen.";
       await refreshTakenSlots();
     } finally {
@@ -303,7 +261,7 @@
       try { await Store.cancelBooking(state.currentBooking.id, state.currentBooking.cancelToken); } catch (e) { /* ignore */ }
     }
     state.currentBooking = null;
-    state.time = "";
+    el.placeInput.value = "";
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
     render();
@@ -312,17 +270,14 @@
   el.resetBtn.addEventListener("click", function () {
     state.empId = "";
     state.dayKey = "";
-    state.time = "";
     state.currentBooking = null;
+    el.placeInput.value = "";
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
     render();
   });
 
-  // — background map —
-  var map = null;
-  var markers = {};
-
+  // — background map (no fixed markers — the booker types their own place) —
   function initMap(tries) {
     if (!el.map) return;
     if (!window.L) {
@@ -331,31 +286,12 @@
       return;
     }
     var L = window.L;
-    map = L.map(el.map, { center: [57.7035, 11.9628], zoom: 14, zoomControl: false, attributionControl: true, scrollWheelZoom: false });
+    var map = L.map(el.map, { center: [57.7035, 11.9628], zoom: 14, zoomControl: false, attributionControl: true, scrollWheelZoom: false });
     L.control.zoom({ position: "bottomright" }).addTo(map);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       subdomains: "abc", maxZoom: 19,
       attribution: "&copy; OpenStreetMap contributors"
     }).addTo(map);
-
-    var placeCoords = {};
-    Store.LUNCH_DAYS.forEach(function (day) { placeCoords[day.place] = day.coords; });
-    Object.keys(placeCoords).forEach(function (name) {
-      var m = L.circleMarker(placeCoords[name], {
-        radius: 9, color: "#6f61c4", weight: 2, fillColor: "#f3f5fe", fillOpacity: 1
-      }).addTo(map).bindTooltip(name, { direction: "top", offset: [0, -6], permanent: true, className: "place-label" });
-      markers[name] = m;
-    });
-    updateMapSelection(Store.LUNCH_DAYS.find(function (x) { return x.date === state.dayKey; }) || null);
-  }
-
-  function updateMapSelection(chosenDay) {
-    if (!markers) return;
-    var active = chosenDay ? chosenDay.place : null;
-    Object.keys(markers).forEach(function (name) {
-      var on = name === active;
-      markers[name].setStyle({ radius: on ? 13 : 9, weight: on ? 3 : 2, fillColor: on ? "#6f61c4" : "#f3f5fe" });
-    });
   }
 
   populateEmployeeSelect();

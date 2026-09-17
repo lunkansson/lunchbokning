@@ -46,7 +46,6 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 .leaflet-bar a:hover { background: var(--color-accent-900); }
 .leaflet-tooltip { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-neutral-800); box-shadow: var(--shadow-md); font-size: 12px; }
 .leaflet-tooltip-top:before { border-top-color: var(--color-neutral-800); }
-.place-label { font-weight: 500; font-family: var(--font-heading); pointer-events: none; }
 
 /* — page shell — */
 .page { position: relative; min-height: 100vh; padding-bottom: 80px; isolation: isolate; }
@@ -154,20 +153,6 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 /* — step 03 — */
 .time-card { padding: 32px; border-radius: var(--radius-lg); max-width: 560px; pointer-events: auto; }
 .day-line { font-size: 15px; color: var(--color-neutral-200); text-transform: lowercase; }
-.place-line { font-size: 13px; color: var(--color-neutral-500); margin-top: var(--space-2); }
-.time-grid { display: flex; flex-wrap: wrap; gap: var(--space-4); margin: var(--space-8) 0 32px; }
-.time-btn {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  padding: var(--space-4) var(--space-8); border-radius: var(--radius-md); font: inherit;
-  color: var(--color-text); background: var(--color-surface); cursor: pointer;
-  border: 1px solid var(--color-neutral-800); min-width: 132px;
-}
-.time-btn .time-value { font-family: var(--font-heading); font-size: 18px; }
-.time-btn .time-note { font-size: 12px; color: var(--color-accent-300); }
-.time-btn--selected { border: 1px solid var(--color-accent); background: var(--color-accent-900); }
-.time-btn--selected .time-note { color: var(--color-accent-200); }
-.time-btn--taken { cursor: not-allowed; background: transparent; border: 1px dashed var(--color-neutral-800); opacity: 0.5; }
-.time-btn--taken .time-note { color: var(--color-neutral-600); }
 
 .confirm-row { display: flex; align-items: center; gap: var(--space-8); flex-wrap: wrap; }
 .confirm-hint { font-size: 13px; color: var(--color-neutral-500); }
@@ -226,9 +211,6 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
   .calendar-month { font-size: 15px; }
   .days-grid { gap: 3px; }
   .day-cell { font-size: 12px; }
-
-  .time-grid { gap: var(--space-3); margin: var(--space-4) 0 20px; }
-  .time-btn { flex: 1 1 45%; min-width: 0; padding: var(--space-3) var(--space-4); }
 
   .confirmed-card { padding: 24px; }
   .confirmed-title { font-size: 24px; }

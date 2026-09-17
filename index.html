@@ -31,12 +31,12 @@
       <div class="hero-card">
         <div class="hero-kicker">Hösten 2026</div>
         <h1 class="hero-title">Luncha med Fredrik</h1>
-        <p class="hero-body">Ingen specifik agenda - bara en timme och något gott att äta. Åtta tider i månaden, först till kvarn, och <span id="cooldown-phrase"></span>.</p>
+        <p class="hero-body">Ingen specifik agenda - bara en timme och något gott att äta. Varje torsdag kl 12, först till kvarn, och <span id="cooldown-phrase"></span>.</p>
       </div>
       <div class="steps-row">
         <div class="step-pill"><span class="step-number">01</span><span class="step-label">Säg vem du är</span></div>
-        <div class="step-pill"><span class="step-number">02</span><span class="step-label">Peka på en dag</span></div>
-        <div class="step-pill"><span class="step-number">03</span><span class="step-label">Ta en tid — klart</span></div>
+        <div class="step-pill"><span class="step-number">02</span><span class="step-label">Peka på en torsdag</span></div>
+        <div class="step-pill"><span class="step-number">03</span><span class="step-label">Säg var — klart</span></div>
       </div>
     </header>
 
@@ -101,12 +101,14 @@
       </section>
 
       <section id="time-section" hidden>
-        <div class="section-heading"><span class="section-number">03</span><h2>Välj tid</h2></div>
+        <div class="section-heading"><span class="section-number">03</span><h2>Vart vill du äta?</h2></div>
         <div class="card time-card">
           <div id="day-line" class="day-line"></div>
-          <div id="place-line" class="place-line"></div>
-          <div id="time-grid" class="time-grid"></div>
-          <div class="confirm-row">
+          <div class="field" style="margin-top: var(--space-6)">
+            <label for="place-input">Lunchställe</label>
+            <input id="place-input" class="input" type="text" placeholder="T.ex. Bistro Nord" autocomplete="off">
+          </div>
+          <div class="confirm-row" style="margin-top: var(--space-6)">
             <button id="confirm-btn" class="btn btn-primary" type="button" disabled>Boka lunchen</button>
             <span id="confirm-hint" class="confirm-hint"></span>
           </div>
