@@ -356,7 +356,6 @@
       var on = name === active;
       markers[name].setStyle({ radius: on ? 13 : 9, weight: on ? 3 : 2, fillColor: on ? "#6f61c4" : "#f3f5fe" });
     });
-    if (active && map) map.panTo(markers[active].getLatLng(), { animate: true });
   }
 
   populateEmployeeSelect();
