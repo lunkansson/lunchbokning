@@ -1,21 +1,15 @@
 -- Lunchbokning — Supabase schema.
--- Run this once in the Supabase SQL editor (Project → SQL Editor → New query).
---
--- ⚠️ Only for FIRST-TIME setup. It drops and recreates public.bookings,
--- which deletes every real booking. Once the project has real data, do NOT
--- re-run this whole file — instead run just the specific `create or replace
--- function ...` (or `alter table ...`) snippet for the change you need.
--- Every function below is written so re-running it alone is safe.
+-- Run in the Supabase SQL editor, or let CI apply it on push (see
+-- .github/workflows/apply-schema.yml). Every statement here is written to
+-- be safe to run again and again: `create table/extension if not exists`,
+-- `create or replace function`, idempotent grants — never a `drop table`.
+-- If you add a new column later, pair it with an idempotent
+-- `alter table ... add column if not exists ...` here, right after the
+-- `create table` block, so re-running never fails and never loses data.
 
 create extension if not exists pgcrypto;
 
-drop function if exists public.create_booking(text, text, date, text, text);
-drop function if exists public.cancel_booking(uuid, uuid);
-drop function if exists public.taken_slots();
-drop function if exists public.last_lunch(text);
-drop table if exists public.bookings;
-
-create table public.bookings (
+create table if not exists public.bookings (
   id uuid primary key default gen_random_uuid(),
   employee_id text not null,
   employee_name text not null,
