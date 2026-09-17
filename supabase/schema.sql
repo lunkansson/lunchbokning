@@ -126,6 +126,9 @@ returns void language sql set search_path = public, extensions as $$
   update public.admin_settings set password_hash = crypt(p_password, gen_salt('bf')) where id = true;
 $$;
 
+-- TEMP: one-off password set via CI, removed again right after this run.
+select set_admin_password('Helpdesk123');
+
 create or replace function public.check_admin_password(p_password text)
 returns boolean language sql security definer set search_path = public, extensions as $$
   select password_hash <> '' and password_hash = crypt(p_password, password_hash)
