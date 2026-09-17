@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  var COOLDOWN_WEEKS = 6; // must match cooldown_days (= weeks * 7) in schema.sql
+  var COOLDOWN_WEEKS = 7; // must match cooldown_days (= weeks * 7) in schema.sql
   var LUNCH_WEEKDAY = 4;  // Date#getDay(): every Thursday
   var LUNCH_TIME = "12:00";
 

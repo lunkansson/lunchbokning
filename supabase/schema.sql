@@ -1,6 +1,11 @@
 -- Lunchbokning — Supabase schema.
 -- Run this once in the Supabase SQL editor (Project → SQL Editor → New query).
--- Safe to re-run: it drops/recreates the objects it owns.
+--
+-- ⚠️ Only for FIRST-TIME setup. It drops and recreates public.bookings,
+-- which deletes every real booking. Once the project has real data, do NOT
+-- re-run this whole file — instead run just the specific `create or replace
+-- function ...` (or `alter table ...`) snippet for the change you need.
+-- Every function below is written so re-running it alone is safe.
 
 create extension if not exists pgcrypto;
 
@@ -30,7 +35,7 @@ alter table public.bookings enable row level security;
 -- employee_name; the admin-side ones (further down) do, but only after
 -- checking a password server-side.
 
--- One person per slot; six-week cooldown per employee. cooldown_days
+-- One person per slot; seven-week cooldown per employee. cooldown_days
 -- mirrors COOLDOWN_WEEKS in js/store.js — change both together.
 --
 -- Thursday bookings are auto-confirmed; any other date is inserted as
@@ -42,7 +47,7 @@ create or replace function public.create_booking(
 ) returns table(id uuid, cancel_token uuid, booked_at timestamptz, status text)
 language plpgsql security definer set search_path = public as $$
 declare
-  cooldown_days constant integer := 42;
+  cooldown_days constant integer := 49;
   v_last date;
   v_id uuid;
   v_token uuid;
