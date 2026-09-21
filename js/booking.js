@@ -34,6 +34,8 @@
     calNext: document.getElementById("cal-next"),
     timeSection: document.getElementById("time-section"),
     dayLine: document.getElementById("day-line"),
+    placeLindholmen: document.getElementById("place-lindholmen"),
+    placeOther: document.getElementById("place-other"),
     placeInput: document.getElementById("place-input"),
     confirmBtn: document.getElementById("confirm-btn"),
     confirmHint: document.getElementById("confirm-hint"),
@@ -62,6 +64,19 @@
 
   function currentEmployee() {
     return Store.EMPLOYEES.find(function (e) { return e.id === state.empId; }) || null;
+  }
+
+  function getPlace() {
+    if (el.placeLindholmen.checked) return "Lindholmen";
+    if (el.placeOther.checked) return el.placeInput.value.trim();
+    return "";
+  }
+
+  function resetPlaceChoice() {
+    el.placeLindholmen.checked = false;
+    el.placeOther.checked = false;
+    el.placeInput.value = "";
+    el.placeInput.disabled = true;
   }
 
   function isSlotTaken(date, time) {
@@ -157,12 +172,12 @@
       el.dayLine.textContent = DAYS[d(chosenIso).getDay()] + " " + fmt(d(chosenIso)) + ", kl " + LUNCH_TIME;
     }
     var emp = currentEmployee();
-    var place = el.placeInput.value.trim();
+    var place = getPlace();
     var canConfirm = !!(emp && chosenIso && place && !isSlotTaken(chosenIso, LUNCH_TIME) && !state.busy);
     el.confirmBtn.disabled = !canConfirm;
     el.confirmBtn.textContent = isRequest ? "Skicka förfrågan" : "Boka lunchen";
     el.confirmHint.textContent = state.busy ? (isRequest ? "Skickar…" : "Bokar…")
-      : !canConfirm ? "Skriv var du vill äta."
+      : !canConfirm ? "Välj Lindholmen eller skriv var du vill äta."
       : isRequest ? "Fredrik godkänner innan den blir bokad."
       : "Du kan avboka fram till dagen före.";
     renderCalendar(emp, state.nextEligible);
@@ -233,11 +248,21 @@
   el.calPrev.addEventListener("click", function () { state.month = Math.max(0, state.month - 1); renderTimesAndConfirm(); });
   el.calNext.addEventListener("click", function () { state.month = Math.min(months.length - 1, state.month + 1); renderTimesAndConfirm(); });
   el.placeInput.addEventListener("input", renderTimesAndConfirm);
+  el.placeLindholmen.addEventListener("change", function () {
+    el.placeInput.disabled = true;
+    el.placeInput.value = "";
+    renderTimesAndConfirm();
+  });
+  el.placeOther.addEventListener("change", function () {
+    el.placeInput.disabled = false;
+    el.placeInput.focus();
+    renderTimesAndConfirm();
+  });
 
   el.confirmBtn.addEventListener("click", async function () {
     var emp = currentEmployee();
     var chosenIso = state.dayKey || null;
-    var place = el.placeInput.value.trim();
+    var place = getPlace();
     if (!emp || !chosenIso || !place || isSlotTaken(chosenIso, LUNCH_TIME) || state.busy) return;
     var isRequest = !Store.isLunchDay(d(chosenIso));
 
@@ -278,7 +303,7 @@
       try { await Store.cancelBooking(state.currentBooking.id, state.currentBooking.cancelToken); } catch (e) { /* ignore */ }
     }
     state.currentBooking = null;
-    el.placeInput.value = "";
+    resetPlaceChoice();
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
     render();
@@ -288,7 +313,7 @@
     state.empId = "";
     state.dayKey = "";
     state.currentBooking = null;
-    el.placeInput.value = "";
+    resetPlaceChoice();
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
     render();
