@@ -75,11 +75,13 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 /* — content — */
 .content { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 0 var(--space-8); pointer-events: none; }
 
-.hero { padding: 64px 0 40px; max-width: 620px; }
-.hero-card { background: var(--color-surface); border-radius: var(--radius-lg); padding: 48px; box-shadow: var(--shadow-sm); pointer-events: auto; }
+.hero { padding: 64px 0 40px; max-width: 900px; }
+.hero-top { display: flex; align-items: center; gap: var(--space-8); }
+.hero-card { background: var(--color-surface); border-radius: var(--radius-lg); padding: 48px; box-shadow: var(--shadow-sm); pointer-events: auto; flex: 1; min-width: 0; max-width: 620px; }
 .hero-kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent-400); margin-bottom: var(--space-6); }
 .hero-title { font-family: var(--font-heading); font-weight: 500; font-size: 52px; line-height: 1.06; letter-spacing: -0.03em; margin: 0 0 var(--space-6); }
 .hero-body { margin: 0; font-size: 17px; line-height: 1.6; color: var(--color-neutral-300); text-wrap: pretty; }
+.hero-meme { flex: none; width: 180px; height: auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); pointer-events: auto; }
 
 .steps-row { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: 32px; }
 .step-pill {
@@ -190,10 +192,11 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
   .content { padding: 0 16px; }
 
   .hero { padding: 32px 0 20px; max-width: none; }
-  .hero-card { padding: 24px; }
+  .hero-card { padding: 24px; max-width: none; }
   .hero-kicker { margin-bottom: var(--space-3); }
   .hero-title { font-size: 32px; margin: 0 0 var(--space-4); }
   .hero-body { font-size: 15px; }
+  .hero-meme { display: none; }
 
   .steps-row { gap: var(--space-3); margin-top: 20px; }
   .step-pill { padding: var(--space-3) var(--space-6); }
