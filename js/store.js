@@ -6,7 +6,7 @@
   "use strict";
 
   var COOLDOWN_WEEKS = 7; // must match cooldown_days (= weeks * 7) in schema.sql
-  var LUNCH_WEEKDAY = 4;  // Date#getDay(): every Thursday
+  var AUTO_BOOK_WEEKDAYS = [2, 4]; // Date#getDay(): every Tuesday and Thursday
   var LUNCH_TIME = "12:00";
 
   var MONTHS = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"];
@@ -32,7 +32,7 @@
   ];
 
   function isLunchDay(dt) {
-    return dt.getDay() === LUNCH_WEEKDAY;
+    return AUTO_BOOK_WEEKDAYS.indexOf(dt.getDay()) !== -1;
   }
 
   function parseDate(iso) {

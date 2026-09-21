@@ -32,10 +32,10 @@ alter table public.bookings enable row level security;
 -- One person per slot; seven-week cooldown per employee. cooldown_days
 -- mirrors COOLDOWN_WEEKS in js/store.js — change both together.
 --
--- Thursday bookings are auto-confirmed; any other date is inserted as
--- 'pending' until an admin approves it. This is decided here, from the
--- date itself, on purpose — never trust a client-supplied status, or
--- anyone could self-approve any day by calling the API directly.
+-- Tuesday and Thursday bookings are auto-confirmed; any other date is
+-- inserted as 'pending' until an admin approves it. This is decided here,
+-- from the date itself, on purpose — never trust a client-supplied status,
+-- or anyone could self-approve any day by calling the API directly.
 create or replace function public.create_booking(
   p_employee_id text, p_employee_name text, p_date date, p_time text, p_place text
 ) returns table(id uuid, cancel_token uuid, booked_at timestamptz, status text)
@@ -57,7 +57,7 @@ begin
     raise exception 'cooldown_active';
   end if;
 
-  v_status := case when extract(dow from p_date)::int = 4 then 'confirmed' else 'pending' end;
+  v_status := case when extract(dow from p_date)::int in (2, 4) then 'confirmed' else 'pending' end;
 
   begin
     insert into public.bookings (employee_id, employee_name, date, time, place, status)

@@ -219,8 +219,8 @@
     }
 
     el.calendarHint.textContent = emp
-      ? "Torsdagar bokas direkt kl " + LUNCH_TIME + ". Andra dagar skickas som en förfrågan till Fredrik."
-      : "Torsdagar bokas direkt, andra dagar är en förfrågan — välj ditt namn ovan för att kunna boka.";
+      ? "Tisdagar och torsdagar bokas direkt kl " + LUNCH_TIME + ". Andra dagar skickas som en förfrågan till Fredrik."
+      : "Tisdagar och torsdagar bokas direkt, andra dagar är en förfrågan — välj ditt namn ovan för att kunna boka.";
 
     renderTimesAndConfirm();
   }
