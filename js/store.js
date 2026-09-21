@@ -35,6 +35,16 @@
     return AUTO_BOOK_WEEKDAYS.indexOf(dt.getDay()) !== -1;
   }
 
+  // "Ulrika Jarnberger" -> "Ulrika J." — for the public name picker only.
+  // The full name still goes to the backend and stays visible in admin;
+  // this just keeps the roster from being fully exposed to anyone visiting
+  // the page without logging in anywhere.
+  function shortName(fullName) {
+    var parts = fullName.trim().split(/\s+/);
+    if (parts.length < 2) return fullName;
+    return parts[0] + " " + parts[parts.length - 1].charAt(0) + ".";
+  }
+
   function parseDate(iso) {
     return new Date(iso + "T12:00:00");
   }
@@ -119,6 +129,7 @@
     WEEKDAYS_FULL: WEEKDAYS_FULL,
     EMPLOYEES: EMPLOYEES,
     isLunchDay: isLunchDay,
+    shortName: shortName,
     parseDate: parseDate,
     formatShort: formatShort,
     fetchTakenSlots: fetchTakenSlots,

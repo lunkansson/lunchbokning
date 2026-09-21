@@ -80,7 +80,7 @@
     Store.EMPLOYEES.forEach(function (e) {
       var opt = document.createElement("option");
       opt.value = e.id;
-      opt.textContent = e.name;
+      opt.textContent = Store.shortName(e.name);
       el.empSelect.appendChild(opt);
     });
   }
