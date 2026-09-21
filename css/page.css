@@ -81,7 +81,7 @@ html, body { margin: 0; padding: 0; background: var(--color-bg); color: var(--co
 .hero-kicker { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent-400); margin-bottom: var(--space-6); }
 .hero-title { font-family: var(--font-heading); font-weight: 500; font-size: 52px; line-height: 1.06; letter-spacing: -0.03em; margin: 0 0 var(--space-6); }
 .hero-body { margin: 0; font-size: 17px; line-height: 1.6; color: var(--color-neutral-300); text-wrap: pretty; }
-.hero-meme { flex: none; width: 180px; height: auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); pointer-events: auto; }
+.hero-meme { flex: none; width: 230px; height: auto; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); pointer-events: auto; }
 
 .steps-row { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: 32px; }
 .step-pill {
