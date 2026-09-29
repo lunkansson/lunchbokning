@@ -80,6 +80,21 @@ begin
 end;
 $$;
 
+-- Lets the booking page show a persistent receipt across reloads: the
+-- browser holds onto (id, cancel_token) from when it booked, and this
+-- re-checks the live status every time the page loads. Returns no rows if
+-- the token doesn't match (or the booking was denied/cancelled since) —
+-- same ownership proof as cancel_booking, nothing new to trust.
+-- Columns aliased away from bare "date"/"time" — same parser quirk as
+-- taken_slots() above.
+create or replace function public.my_booking(p_id uuid, p_token uuid)
+returns table(employee_id text, employee_name text, booking_date date, booking_time text, place text, status text)
+language sql security definer set search_path = public as $$
+  select employee_id, employee_name, date, time, place, status
+  from public.bookings
+  where id = p_id and cancel_token = p_token;
+$$;
+
 -- Slot availability only — never exposes who booked it. Includes pending
 -- requests too, not just confirmed bookings, so two people can't end up
 -- both waiting on approval for the same date.
@@ -101,6 +116,7 @@ $$;
 
 grant execute on function public.create_booking(text, text, date, text, text) to anon;
 grant execute on function public.cancel_booking(uuid, uuid) to anon;
+grant execute on function public.my_booking(uuid, uuid) to anon;
 grant execute on function public.taken_slots() to anon;
 grant execute on function public.last_lunch(text) to anon;
 

@@ -102,6 +102,16 @@
     return !!res.data;
   }
 
+  // Re-checks a stored (id, cancelToken) against the live database — used
+  // to show a persistent receipt across reloads. Returns null if the token
+  // doesn't match or the booking is gone (denied/cancelled since).
+  async function myBooking(id, cancelToken) {
+    var res = await db().rpc("my_booking", { p_id: id, p_token: cancelToken });
+    if (res.error) throw res.error;
+    var row = Array.isArray(res.data) ? res.data[0] : res.data;
+    return row || null;
+  }
+
   // — admin only: every call re-checks the password server-side, nothing
   // is stored as a session. See supabase/schema.sql for set_admin_password. —
   async function adminListBookings(password) {
@@ -136,6 +146,7 @@
     lastLunchFor: lastLunchFor,
     createBooking: createBooking,
     cancelBooking: cancelBooking,
+    myBooking: myBooking,
     adminListBookings: adminListBookings,
     adminDeleteBooking: adminDeleteBooking,
     adminApproveBooking: adminApproveBooking

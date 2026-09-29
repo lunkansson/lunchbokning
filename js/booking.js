@@ -12,6 +12,20 @@
   today.setHours(0, 0, 0, 0);
 
   var MONTHS_AHEAD = 12;
+  var MY_BOOKING_KEY = "lunchbokning:my-booking";
+
+  function saveMyBooking(b) {
+    try { window.localStorage.setItem(MY_BOOKING_KEY, JSON.stringify(b)); } catch (e) { /* ignore */ }
+  }
+  function loadMyBooking() {
+    try {
+      var raw = window.localStorage.getItem(MY_BOOKING_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+  function clearMyBooking() {
+    try { window.localStorage.removeItem(MY_BOOKING_KEY); } catch (e) { /* ignore */ }
+  }
 
   var state = {
     empId: "", dayKey: "", month: 0,
@@ -240,6 +254,41 @@
     renderTimesAndConfirm();
   }
 
+  // opts: { firstName, dayIso, place, status }
+  function showReceipt(opts) {
+    var pending = opts.status === "pending";
+    var dayLabel = DAYS[d(opts.dayIso).getDay()] + " " + fmt(d(opts.dayIso)) + ", kl " + LUNCH_TIME;
+    el.receiptTag.textContent = pending ? "Väntar" : "Bokat";
+    el.receiptTag.className = pending ? "tag tag-neutral" : "tag tag-accent";
+    el.receiptTitle.textContent = dayLabel;
+    el.receiptBody.textContent = pending
+      ? "Tack " + opts.firstName + " — skickat till Fredrik för godkännande. Du får inget besked här automatiskt, men om han godkänner ligger den i kalendern."
+      : "Tack " + opts.firstName + " — det ligger i kalendern. Du får en påminnelse dagen före, och hör av dig om något krånglar.";
+    el.receiptPlace.textContent = opts.place;
+    el.receiptNext.textContent = "Du kan boka igen från " + fmt(new Date(d(opts.dayIso).getTime() + Store.COOLDOWN_WEEKS * 7 * 86400000));
+    el.cancelBtn.textContent = pending ? "Dra tillbaka förfrågan" : "Avboka";
+
+    el.bookingView.hidden = true;
+    el.confirmedView.hidden = false;
+  }
+
+  // Re-checks a booking saved in this browser against the live database, so
+  // the receipt survives reloads instead of only showing right after you book.
+  async function restoreMyBooking() {
+    var saved = loadMyBooking();
+    if (!saved || !saved.id || !saved.cancelToken) return false;
+    try {
+      var row = await Store.myBooking(saved.id, saved.cancelToken);
+      if (!row) { clearMyBooking(); return false; }
+      state.currentBooking = { id: saved.id, cancelToken: saved.cancelToken };
+      state.empId = row.employee_id;
+      showReceipt({ firstName: row.employee_name.split(" ")[0], dayIso: row.booking_date, place: row.place, status: row.status });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   el.empSelect.addEventListener("change", function (ev) {
     state.empId = ev.target.value;
     state.dayKey = "";
@@ -271,21 +320,8 @@
     try {
       var record = await Store.createBooking({ employeeId: emp.id, employeeName: emp.name, date: chosenIso, time: LUNCH_TIME, place: place });
       state.currentBooking = { id: record.id, cancelToken: record.cancel_token };
-      var pending = record.status === "pending";
-
-      var dayLabel = DAYS[d(chosenIso).getDay()] + " " + fmt(d(chosenIso)) + ", kl " + LUNCH_TIME;
-      el.receiptTag.textContent = pending ? "Väntar" : "Bokat";
-      el.receiptTag.className = pending ? "tag tag-neutral" : "tag tag-accent";
-      el.receiptTitle.textContent = dayLabel;
-      el.receiptBody.textContent = pending
-        ? "Tack " + emp.name.split(" ")[0] + " — skickat till Fredrik för godkännande. Du får inget besked här automatiskt, men om han godkänner ligger den i kalendern."
-        : "Tack " + emp.name.split(" ")[0] + " — det ligger i kalendern. Du får en påminnelse dagen före, och hör av dig om något krånglar.";
-      el.receiptPlace.textContent = place;
-      el.receiptNext.textContent = "Du kan boka igen från " + fmt(new Date(d(chosenIso).getTime() + Store.COOLDOWN_WEEKS * 7 * 86400000));
-      el.cancelBtn.textContent = pending ? "Dra tillbaka förfrågan" : "Avboka";
-
-      el.bookingView.hidden = true;
-      el.confirmedView.hidden = false;
+      saveMyBooking(state.currentBooking);
+      showReceipt({ firstName: emp.name.split(" ")[0], dayIso: chosenIso, place: place, status: record.status });
     } catch (err) {
       var reason = err && err.message;
       if (reason === "slot_taken") el.confirmHint.textContent = "Just tagen av någon annan — välj en annan dag.";
@@ -303,6 +339,7 @@
       try { await Store.cancelBooking(state.currentBooking.id, state.currentBooking.cancelToken); } catch (e) { /* ignore */ }
     }
     state.currentBooking = null;
+    clearMyBooking();
     resetPlaceChoice();
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
@@ -313,6 +350,7 @@
     state.empId = "";
     state.dayKey = "";
     state.currentBooking = null;
+    clearMyBooking();
     resetPlaceChoice();
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
@@ -338,5 +376,11 @@
 
   populateEmployeeSelect();
   initMap();
-  render();
+  el.bookingView.hidden = true;
+  restoreMyBooking().then(function (restored) {
+    if (!restored) {
+      el.bookingView.hidden = false;
+      render();
+    }
+  });
 })();
