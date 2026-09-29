@@ -62,8 +62,20 @@
     receiptNext: document.getElementById("receipt-next"),
     cancelBtn: document.getElementById("cancel-btn"),
     resetBtn: document.getElementById("reset-btn"),
-    map: document.getElementById("map")
+    map: document.getElementById("map"),
+    bookedDialogBackdrop: document.getElementById("booked-dialog-backdrop"),
+    bookedDialogTitle: document.getElementById("booked-dialog-title"),
+    bookedDialogBody: document.getElementById("booked-dialog-body"),
+    bookedDialogClose: document.getElementById("booked-dialog-close")
   };
+
+  function showBookedPopup(pending) {
+    el.bookedDialogTitle.textContent = pending ? "Skickat!" : "Bokat!";
+    el.bookedDialogBody.textContent = pending
+      ? "Din förfrågan är skickad till Fredrik för godkännande."
+      : "Din lunch är bokad.";
+    el.bookedDialogBackdrop.hidden = false;
+  }
 
   // Navigable a year ahead of whichever month holds today.
   function monthsShown() {
@@ -322,6 +334,7 @@
       state.currentBooking = { id: record.id, cancelToken: record.cancel_token };
       saveMyBooking(state.currentBooking);
       showReceipt({ firstName: emp.name.split(" ")[0], dayIso: chosenIso, place: place, status: record.status });
+      showBookedPopup(record.status === "pending");
     } catch (err) {
       var reason = err && err.message;
       if (reason === "slot_taken") el.confirmHint.textContent = "Just tagen av någon annan — välj en annan dag.";
@@ -355,6 +368,10 @@
     el.confirmedView.hidden = true;
     el.bookingView.hidden = false;
     render();
+  });
+
+  el.bookedDialogClose.addEventListener("click", function () {
+    el.bookedDialogBackdrop.hidden = true;
   });
 
   // — background map (no fixed markers — the booker types their own place) —
