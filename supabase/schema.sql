@@ -195,3 +195,40 @@ grant execute on function public.admin_approve_booking(text, uuid) to anon;
 -- check_admin_password and set_admin_password are deliberately NOT granted
 -- to anon: the former is only ever called from inside the two functions
 -- above, the latter only runs when you execute it yourself in the SQL editor.
+
+-- ─── Outlook/calendar feed: one shared secret token, same pattern as the
+-- admin password above. Set/change it from the SQL editor:
+--   select set_ics_feed_token('a-long-random-string-here');
+-- The token travels in the feed URL you paste into Outlook once — same
+-- trust model as a calendar app's own "private address" feed links.
+create table if not exists public.ics_feed_settings (
+  id boolean primary key default true check (id),
+  token text not null default ''
+);
+insert into public.ics_feed_settings (id) values (true) on conflict (id) do nothing;
+
+create or replace function public.set_ics_feed_token(p_token text)
+returns void language sql set search_path = public as $$
+  update public.ics_feed_settings set token = p_token where id = true;
+$$;
+
+create or replace function public.check_ics_feed_token(p_token text)
+returns boolean language sql security definer set search_path = public as $$
+  select token <> '' and token = p_token from public.ics_feed_settings where id = true;
+$$;
+
+-- Feeds only confirmed bookings (not pending requests) to the calendar
+-- function below. Not granted to anon — only the Edge Function calls this,
+-- using the service_role key, which Supabase grants full access by
+-- default. set_ics_feed_token is likewise ungranted: SQL editor only.
+create or replace function public.ics_feed_bookings(p_token text)
+returns table(id uuid, employee_name text, booking_date date, booking_time text, place text)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public.check_ics_feed_token(p_token) then
+    raise exception 'invalid_token';
+  end if;
+  return query select bookings.id, bookings.employee_name, bookings.date, bookings.time, bookings.place
+    from public.bookings where status = 'confirmed' order by date, time;
+end;
+$$;

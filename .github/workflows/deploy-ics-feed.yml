@@ -1,0 +1,32 @@
+name: Deploy ICS feed function
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy ics-feed function
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set +e
+          OUTPUT=$(supabase functions deploy ics-feed --project-ref izfgfzpftfekcxlcskjo --no-verify-jwt 2>&1)
+          STATUS=$?
+          echo "$OUTPUT"
+          if [ $STATUS -ne 0 ]; then
+            ESCAPED=$(printf '%s' "$OUTPUT" | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error::supabase deploy exit $STATUS: $ESCAPED"
+            exit $STATUS
+          fi
