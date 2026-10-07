@@ -232,15 +232,3 @@ begin
     from public.bookings where status = 'confirmed' order by date, time;
 end;
 $$;
-
--- TEMP DIAGNOSTIC: remove after use
-do $$
-declare
-  v text;
-begin
-  select string_agg(proname, ', ') into v from pg_proc
-    join pg_namespace on pg_namespace.oid = pg_proc.pronamespace
-    where pg_namespace.nspname = 'public' and proname like '%ics%';
-  raise exception 'DIAG functions=%', coalesce(v, 'NONE');
-end;
-$$;
